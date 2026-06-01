@@ -39,12 +39,31 @@ Resources:
 - (must) `context.Context`: cancellation, deadlines, `context.WithCancel`, passing ctx as the first arg.
 - (must) Graceful shutdown: catching `SIGINT`/`SIGTERM` with `signal.NotifyContext`, draining work.
 - (must) Channels and `select` (for the consumer loop and shutdown signaling).
+- (must) The race detector: run `go test -race` / `go run -race` to *detect* when you need synchronization
+  instead of guessing.
 - (helpful) `sync.WaitGroup` to wait for in-flight work before exit; `errgroup` (`golang.org/x/sync/errgroup`).
+- (helpful) `sync.Mutex` / `sync.RWMutex`, `sync.Once`, and `sync/atomic` - the tools for sharing mutable
+  state safely. See the note below on whether this project actually needs them.
+
+Note on mutexes (you asked - here's the honest answer): the mandated core can be built without writing a
+mutex, because the producer is a single goroutine, the processor starts sequential, and
+`subscriptions.yaml` is read-only after load (read-only sharing is safe). You will, however, hit the exact
+problem mutexes solve in a few natural spots, so learn them conceptually and apply when the race detector
+or design demands it:
+- Lazy-caching the queue URL / bucket existence across goroutines -> `sync.Once` (preferred) or a `Mutex`.
+- Processing a batch concurrently (optional worker pool in Sprint 2) -> a channel is usually cleaner than a `Mutex`.
+- Hot-reloading `subscriptions.yaml` at runtime (an enhancement) -> classic `sync.RWMutex` (many readers, rare writer).
+- A homegrown counter would need a `Mutex`/`atomic`, but OTel metrics (Sprint 4) are already concurrency-safe, so you avoid it there.
+Go philosophy: "share memory by communicating." Reach for a channel to hand off work between goroutines;
+reach for a `Mutex` to guard a small piece of shared state. Learn both; pick per situation.
 
 Resources:
 - Go Concurrency Patterns - https://go.dev/blog/pipelines
 - `context` package - https://pkg.go.dev/context
 - `os/signal` (`NotifyContext`) - https://pkg.go.dev/os/signal#NotifyContext
+- `sync` package (`Mutex`, `RWMutex`, `Once`) - https://pkg.go.dev/sync
+- `sync/atomic` - https://pkg.go.dev/sync/atomic
+- Data Race Detector - https://go.dev/doc/articles/race_detector
 
 ## Phase D - HTTP server & client (Sprint 3)
 
