@@ -1,0 +1,29 @@
+{
+  "id": "b7e1a9d3-5c6f-4a2b-8d0e-3a1c5e7f9b2d",
+  "type": "order.shipped",
+  "occurred_at": "2026-06-02T14:47:05Z",
+  "data": {
+    "order_id": "ord_10428",
+    "customer_id": "cus_5567",
+    "status": "shipped",
+    "currency": "USD",
+    "amount": 129.97,
+    "shipment": {
+      "carrier": "DHL",
+      "tracking_number": "JD0014600007364215",
+      "tracking_url": "https://www.dhl.com/track?id=JD0014600007364215",
+      "shipped_at": "2026-06-02T14:47:00Z",
+      "estimated_delivery": "2026-06-05",
+      "items": [
+        {
+          "sku": "TSHIRT-BLK-M",
+          "quantity": 2
+        },
+        {
+          "sku": "MUG-CER-01",
+          "quantity": 1
+        }
+      ]
+    }
+  }
+}

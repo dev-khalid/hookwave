@@ -1,0 +1,32 @@
+{
+  "id": "0f3b6c1e-7a2d-4c5b-9e8f-1a2b3c4d5e6f",
+  "type": "order.created",
+  "occurred_at": "2026-06-01T09:15:30Z",
+  "data": {
+    "order_id": "ord_10428",
+    "customer_id": "cus_5567",
+    "status": "created",
+    "currency": "USD",
+    "amount": 129.97,
+    "items": [
+      {
+        "sku": "TSHIRT-BLK-M",
+        "name": "Black T-Shirt (M)",
+        "quantity": 2,
+        "unit_price": 24.99
+      },
+      {
+        "sku": "MUG-CER-01",
+        "name": "Ceramic Mug",
+        "quantity": 1,
+        "unit_price": 79.99
+      }
+    ],
+    "shipping_address": {
+      "line1": "221B Baker Street",
+      "city": "London",
+      "postal_code": "NW1 6XE",
+      "country": "GB"
+    }
+  }
+}

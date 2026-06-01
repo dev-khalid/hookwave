@@ -1,0 +1,24 @@
+{
+  "id": "9c4d2e7a-1b3f-4d6c-8a9e-2f4b6d8c0a1e",
+  "type": "order.updated",
+  "occurred_at": "2026-06-01T10:02:11Z",
+  "data": {
+    "order_id": "ord_10428",
+    "customer_id": "cus_5567",
+    "status": "paid",
+    "currency": "USD",
+    "amount": 129.97,
+    "previous_status": "created",
+    "changes": {
+      "status": {
+        "from": "created",
+        "to": "paid"
+      },
+      "payment": {
+        "method": "card",
+        "transaction_id": "txn_88231",
+        "paid_at": "2026-06-01T10:02:10Z"
+      }
+    }
+  }
+}
