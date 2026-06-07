@@ -1,6 +1,6 @@
 # Architecture - Hookwave Webhook Delivery Platform
 
-Read this once before Sprint 0. It is the single source of truth for *what* the system is and *why*
+Read this once before Sprint 0. It is the single source of truth for _what_ the system is and _why_
 the pieces exist. Sprint files reference back to sections here.
 
 ## 1. The model (real-webhook style, not internal RPC)
@@ -59,7 +59,7 @@ sequenceDiagram
 ```
 
 Key learning point: the message is only **deleted (acked)** after successful processing. If the
-processor crashes mid-delivery, SQS makes the message visible again after the *visibility timeout*,
+processor crashes mid-delivery, SQS makes the message visible again after the _visibility timeout_,
 so it is redelivered. That is what "at-least-once" means - and why subscribers should tolerate
 duplicates.
 
@@ -75,8 +75,6 @@ duplicates.
 - **Logging**: standard library `log/slog` (structured logging, no extra deps).
 - **Observability**: OpenTelemetry Go SDK (`go.opentelemetry.io/otel` and the OTLP exporter),
   exporting to the collector inside `grafana/otel-lgtm`.
-- **Testing**: standard library `testing` + `github.com/stretchr/testify`. `testcontainers-go` for
-  integration tests is Nice-to-have.
 - **Lint/format**: `gofmt`, `go vet`, `golangci-lint`.
 - **Build helpers**: a `Makefile`.
 - **Containers**: multi-stage Docker builds on a small base (distroless or alpine).
@@ -147,6 +145,7 @@ Use the single open-source `grafana/otel-lgtm` image locally. It bundles the Ope
 Prometheus (metrics), Tempo (traces), Loki (logs), and Grafana (dashboards) in one container.
 
 Each service:
+
 - Emits **traces**: a producer span -> SQS -> a processor span -> HTTP -> a subscriber span, so you
   can see end-to-end latency and find the bottleneck (queue wait vs HTTP delivery vs S3 write).
 - Emits **metrics**: throughput, delivery success/failure counts, queue receive latency.
@@ -166,8 +165,7 @@ Terraform IaC and EKS manifests are documented as Nice-to-have, not built in the
 - **Reliability**: delivery retries with exponential backoff, a dead-letter queue, and an HMAC
   signature header on each delivery (so subscribers can verify authenticity).
 - **Subscription management API + Postgres** to replace the YAML config.
-- **Integration tests** with `testcontainers-go` against ElasticMQ/MinIO.
 - **Loki** log correlation and log-based dashboards.
-- **CI** with GitHub Actions (build, test, lint, image push).
+- **CI** with GitHub Actions (build, lint, image push).
 - **AWS deployment**: Terraform for SQS/S3/IAM, EKS, ECR, real KEDA SQS scaling.
 - **Multi-module `go.work`** split for stricter service isolation.

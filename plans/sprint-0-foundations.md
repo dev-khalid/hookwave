@@ -1,25 +1,24 @@
 # Sprint 0 - Foundations & repo skeleton
 
-Estimated: 6-9h. Study first: Study Guide Phase A (Go fundamentals) + Phase F (testing/logging basics).
+Estimated: 6-9h. Study first: Study Guide Phase A (Go fundamentals) + logging basics.
 
 ## Goal & outcome
 
 A clean monorepo that compiles, has the agreed layout, three empty-but-runnable binaries, a `Makefile`,
-linting, and one passing test. No business logic yet. When done, `make build`, `make test`, and
-`make lint` all succeed and each of the three services starts and prints a log line.
+and linting. No business logic yet. When done, `make build` and `make lint` both succeed and each of the
+three services starts and prints a log line.
 
 ## Study first (why each matters)
 
 - Modules & packages: you'll create one module and many packages; understand import paths.
 - Exported vs unexported identifiers (capitalization) - decides your package APIs.
 - `log/slog`: every service logs structured lines from day one.
-- `testing`: you set up the habit of one test per package now.
 
 ## Build steps (in order)
 
 1. **Decide the name.** Default `hookwave`. Whatever you pick is the module path base. Write it down.
 2. **Initialize git** (if not already): `git init`, add a `.gitignore` for Go (ignore built binaries,
-   `*.out` coverage, `.env`, local data dirs like `*/data/`).
+   `.env`, local data dirs like `*/data/`).
 3. **Set the module path.** Update `go.mod`'s module line to your name (e.g. `module github.com/<you>/hookwave`).
    Keep `go 1.26`. (You can use a bare name like `hookwave` if you won't publish, but a GitHub-style
    path is the convention.)
@@ -31,19 +30,17 @@ linting, and one passing test. No business logic yet. When done, `make build`, `
    - log a startup line with the service name,
    - set up a `signal.NotifyContext` for `SIGINT`/`SIGTERM`,
    - block until that context is cancelled, then log a shutdown line and exit 0.
-   This gives you the graceful-shutdown skeleton you'll reuse everywhere.
+     This gives you the graceful-shutdown skeleton you'll reuse everywhere.
 6. **Create a shared logger helper** in `internal/observability` (e.g. `NewLogger(service string) *slog.Logger`)
    so all three binaries build the logger the same way. Wire each `main.go` to use it.
 7. **Add a Makefile** with at least: `build` (build all three), `run-producer`/`run-processor`/`run-subscriber`,
-   `test` (`go test ./...`), `lint` (`golangci-lint run`), `fmt` (`gofmt -w .`), `tidy` (`go mod tidy`).
+   `lint` (`golangci-lint run`), `fmt` (`gofmt -w .`), `tidy` (`go mod tidy`).
 8. **Install and configure golangci-lint.** Add a minimal `.golangci.yml` enabling at least
    `govet`, `staticcheck`, `errcheck`, `ineffassign`, `gofmt`.
-9. **Write one trivial test** (e.g. in `internal/observability`) so `make test` exercises a real test,
-   not "no tests to run". Learn table-driven test style here.
-10. **Create `configs/subscriptions.yaml`** as a placeholder with the shape you'll use in Sprint 2
-    (a list of subscribers, each with `id`, `url`, `method`, and `events: [order.created, ...]`).
-    You won't read it yet - just commit the shape.
-11. **Copy a trimmed architecture into `docs/ARCHITECTURE.md`** (the repo's own doc, separate from `plans/`).
+9. **Create `configs/subscriptions.yaml`** as a placeholder with the shape you'll use in Sprint 2
+   (a list of subscribers, each with `id`, `url`, `method`, and `events: [order.created, ...]`).
+   You won't read it yet - just commit the shape.
+10. **Copy a trimmed architecture into `docs/ARCHITECTURE.md`** (the repo's own doc, separate from `plans/`).
 
 ## Suggested package responsibilities (so you don't blur boundaries later)
 
@@ -55,7 +52,6 @@ linting, and one passing test. No business logic yet. When done, `make build`, `
 
 - `go build ./...` -> no errors.
 - `make build` -> produces three binaries (or builds cleanly).
-- `make test` -> at least one test runs and passes.
 - `make lint` -> no findings (fix or justify any).
 - Running each binary prints a startup log line, and Ctrl+C prints a shutdown line and exits cleanly.
 
@@ -64,7 +60,7 @@ linting, and one passing test. No business logic yet. When done, `make build`, `
 - Import path mismatches: your imports must match the `go.mod` module path exactly. If you rename the
   module later, every internal import changes - decide the name now.
 - Git won't track empty dirs; use `.gitkeep`.
-- Don't put logic in `main.go`. `main` wires things; packages do the work. This keeps later sprints testable.
+- Don't put logic in `main.go`. `main` wires things; packages do the work.
 - Running a binary that immediately exits usually means you forgot to block on the shutdown context.
 
 ## Commit

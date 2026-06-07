@@ -28,13 +28,13 @@ type ObjectStore interface {
 }
 ```
 
-   - Construct the S3 client with `BaseEndpoint` (MinIO URL) and `o.UsePathStyle = true`.
-   - Add `EnsureBucket(ctx, name)`; ignore "already exists" errors.
+- Construct the S3 client with `BaseEndpoint` (MinIO URL) and `o.UsePathStyle = true`.
+- Add `EnsureBucket(ctx, name)`; ignore "already exists" errors.
+
 3. **Build the `subscriber` service (`cmd/subscriber`)**:
    - HTTP server with a route like `POST /webhooks`.
    - Handler: read the body (limit its size), optionally validate it's JSON, build an object key
-     (e.g. `events/{type}/{eventID}.json` - derive from headers/body), call `storage.Put`, then return
-     200. Return 4xx on bad input, 5xx only on real server errors.
+     (e.g. `events/{type}/{eventID}.json` - derive from headers/body), call `storage.Put`, then return 200. Return 4xx on bad input, 5xx only on real server errors.
    - Use `internal/httpx` for shared server setup (timeouts, logging middleware) so all HTTP servers
      look the same.
    - Graceful shutdown: `server.Shutdown(ctx)` on signal.
@@ -51,9 +51,6 @@ type ObjectStore interface {
 6. **Point `subscriptions.yaml` at the subscriber.** Add one (or more) subscription entries whose `url`
    is the subscriber service (`http://subscriber:8080/webhooks` in compose, `http://localhost:PORT/...`
    when running locally) and `events` lists the types you produce.
-7. **Tests:** unit-test the subscriber handler with `httptest` (good body -> 200 + Put called;
-   bad body -> 4xx). Unit-test object-key building and the deliverer's status-code handling with a
-   `httptest.Server`.
 
 ## Definition of Done
 
@@ -62,8 +59,7 @@ type ObjectStore interface {
   the original event JSON.
 - Killing the subscriber causes deliveries to fail, the processor does NOT delete those messages, and
   when the subscriber comes back the messages are redelivered and stored (demonstrating at-least-once).
-- Handler and deliverer have passing `httptest`-based tests.
-- `make test`, `make lint` pass.
+- `make lint` passes.
 
 ## Pitfalls
 

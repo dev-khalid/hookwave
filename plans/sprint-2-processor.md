@@ -12,7 +12,7 @@ queue lifecycle right before adding network calls.
 
 ## Study first (why)
 
-- SQS receive lifecycle: long polling (`WaitTimeSeconds`), batch receive, *visibility timeout*, and why
+- SQS receive lifecycle: long polling (`WaitTimeSeconds`), batch receive, _visibility timeout_, and why
   you delete only after success. This is the core of at-least-once delivery.
 - `context` cancellation in a long-running loop; `select` between "got messages" and "shutdown".
 - Loading and validating YAML into typed structs.
@@ -35,8 +35,9 @@ type Consumer interface {
 }
 ```
 
-   - Implement with SQS `ReceiveMessage` (set `WaitTimeSeconds` for long polling, `MaxNumberOfMessages`,
-     and request message attributes) and `DeleteMessage`.
+- Implement with SQS `ReceiveMessage` (set `WaitTimeSeconds` for long polling, `MaxNumberOfMessages`,
+  and request message attributes) and `DeleteMessage`.
+
 2. **Model subscriptions in `internal/subscriptions`.** A `Subscription` struct (`ID`, `URL`, `Method`,
    `Events []string`) and a `Registry` that loads `subscriptions.yaml` and offers
    `Match(eventType string) []Subscription`. Validate on load (non-empty URL, known event types, valid method).
@@ -53,8 +54,6 @@ type Consumer interface {
 5. **Decide concurrency.** Start sequential (simplest, correct). Once green, optionally process a batch
    concurrently with a small worker pool / `errgroup`, making sure each message is deleted only after its
    own success. Keep it correct before making it fast.
-6. **Tests:** unit-test the `subscriptions.Registry` matching (table-driven: events with 0, 1, many
-   matches; unknown type) and the event parsing. These need no AWS.
 
 ## Definition of Done
 
@@ -63,8 +62,7 @@ type Consumer interface {
 - Stopping the producer drains the queue to empty; the processor then idles on long poll.
 - Ctrl+C stops the processor mid-poll within ~the poll wait, with no lost or double-deleted messages in
   the happy path.
-- Subscription matching has passing table-driven tests.
-- `make test`, `make lint` pass.
+- `make lint` passes.
 
 ## Pitfalls
 

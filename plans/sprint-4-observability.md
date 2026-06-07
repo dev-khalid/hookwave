@@ -25,7 +25,7 @@ and read throughput/latency/error dashboards. This is how you answer "where is t
    - creates an OTLP exporter pointing at the collector (endpoint from env, default the otel-lgtm host),
    - installs a `TracerProvider` and a `MeterProvider` and sets global propagators (tracecontext + baggage),
    - returns a `shutdown(ctx)` func that flushes/closes providers.
-   Call it from all three `main.go` files; defer the shutdown.
+     Call it from all three `main.go` files; defer the shutdown.
 3. **Instrument the producer:** start a span around "produce event" and **inject** the trace context into
    SQS message attributes (write a small carrier that maps the propagator to the attributes map). Add a
    counter metric for events produced.
@@ -50,7 +50,7 @@ and read throughput/latency/error dashboards. This is how you answer "where is t
 - Prometheus (via Grafana) shows your custom metrics changing as load changes.
 - You can point at a panel and say "the slow part is X" (e.g. S3 write vs HTTP delivery vs queue wait).
 - Services still shut down cleanly (telemetry flushes on exit, no dropped spans on Ctrl+C).
-- `make test`, `make lint` pass.
+- `make lint` passes.
 
 ## Pitfalls
 

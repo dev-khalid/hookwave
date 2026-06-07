@@ -60,4 +60,3 @@ with every hop emitting OpenTelemetry traces/metrics to Grafana.
 - After each Build step, run it and observe the result before moving on.
 - When something breaks, read the actual error first. Go errors are usually precise.
 - Keep functions small and packages focused; refactor when a file passes ~200 lines.
-- Write at least one test per package as you go (Sprint 0 sets up the habit).

@@ -16,6 +16,7 @@ Legend: (must) = you cannot do the sprint without it; (helpful) = makes it smoot
 - (helpful) `defer`, zero values, named returns.
 
 Resources:
+
 - A Tour of Go - https://go.dev/tour/
 - Effective Go - https://go.dev/doc/effective_go
 - How to Write Go Code - https://go.dev/doc/code
@@ -29,6 +30,7 @@ Resources:
 - (helpful) `time` package: timers/tickers for the producer's interval/burst.
 
 Resources:
+
 - `encoding/json` - https://pkg.go.dev/encoding/json
 - JSON and Go (blog) - https://go.dev/blog/json
 - `gopkg.in/yaml.v3` - https://pkg.go.dev/gopkg.in/yaml.v3
@@ -39,7 +41,7 @@ Resources:
 - (must) `context.Context`: cancellation, deadlines, `context.WithCancel`, passing ctx as the first arg.
 - (must) Graceful shutdown: catching `SIGINT`/`SIGTERM` with `signal.NotifyContext`, draining work.
 - (must) Channels and `select` (for the consumer loop and shutdown signaling).
-- (must) The race detector: run `go test -race` / `go run -race` to *detect* when you need synchronization
+- (must) The race detector: run the app with `-race` to _detect_ when you need synchronization
   instead of guessing.
 - (helpful) `sync.WaitGroup` to wait for in-flight work before exit; `errgroup` (`golang.org/x/sync/errgroup`).
 - (helpful) `sync.Mutex` / `sync.RWMutex`, `sync.Once`, and `sync/atomic` - the tools for sharing mutable
@@ -50,14 +52,16 @@ mutex, because the producer is a single goroutine, the processor starts sequenti
 `subscriptions.yaml` is read-only after load (read-only sharing is safe). You will, however, hit the exact
 problem mutexes solve in a few natural spots, so learn them conceptually and apply when the race detector
 or design demands it:
+
 - Lazy-caching the queue URL / bucket existence across goroutines -> `sync.Once` (preferred) or a `Mutex`.
 - Processing a batch concurrently (optional worker pool in Sprint 2) -> a channel is usually cleaner than a `Mutex`.
 - Hot-reloading `subscriptions.yaml` at runtime (an enhancement) -> classic `sync.RWMutex` (many readers, rare writer).
 - A homegrown counter would need a `Mutex`/`atomic`, but OTel metrics (Sprint 4) are already concurrency-safe, so you avoid it there.
-Go philosophy: "share memory by communicating." Reach for a channel to hand off work between goroutines;
-reach for a `Mutex` to guard a small piece of shared state. Learn both; pick per situation.
+  Go philosophy: "share memory by communicating." Reach for a channel to hand off work between goroutines;
+  reach for a `Mutex` to guard a small piece of shared state. Learn both; pick per situation.
 
 Resources:
+
 - Go Concurrency Patterns - https://go.dev/blog/pipelines
 - `context` package - https://pkg.go.dev/context
 - `os/signal` (`NotifyContext`) - https://pkg.go.dev/os/signal#NotifyContext
@@ -73,6 +77,7 @@ Resources:
 - (helpful) Middleware pattern (wrapping handlers) for logging/tracing.
 
 Resources:
+
 - `net/http` - https://pkg.go.dev/net/http
 - Routing enhancements (Go 1.22) - https://go.dev/blog/routing-enhancements
 - Don't forget `defer resp.Body.Close()` and to drain the body.
@@ -81,27 +86,25 @@ Resources:
 
 - (must) `config.LoadDefaultConfig` and overriding `BaseEndpoint` for ElasticMQ/MinIO.
 - (must) SQS: `CreateQueue`, `GetQueueUrl`, `SendMessage`, `ReceiveMessage` (long polling), `DeleteMessage`,
-  and the meaning of *visibility timeout*.
+  and the meaning of _visibility timeout_.
 - (must) S3: `CreateBucket`, `PutObject`, object keys, content type. MinIO needs `UsePathStyle = true`.
 - (helpful) How the SDK does retries and timeouts.
 
 Resources:
+
 - aws-sdk-go-v2 - https://aws.github.io/aws-sdk-go-v2/docs/
 - SQS client - https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/sqs
 - S3 client - https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/s3
 - ElasticMQ - https://github.com/softwaremill/elasticmq
 - MinIO (S3 compatibility) - https://min.io/docs/minio/linux/index.html
 
-## Phase F - testing & logging (start in Sprint 0, continue throughout)
+## Phase F - logging (start in Sprint 0, continue throughout)
 
-- (must) `testing` package: `*_test.go`, `go test ./...`, table-driven tests.
 - (must) `log/slog`: structured logs, log levels, attaching attributes (e.g. event id, subscriber).
-- (helpful) `testify/assert` and `testify/require`.
 
 Resources:
-- `testing` - https://pkg.go.dev/testing
+
 - `log/slog` - https://pkg.go.dev/log/slog
-- testify - https://github.com/stretchr/testify
 
 ## Phase G - containers (Sprint 5)
 
@@ -111,6 +114,7 @@ Resources:
 - (helpful) Distroless/static base images and why a Go binary can run on `scratch`.
 
 Resources:
+
 - Dockerfile reference - https://docs.docker.com/reference/dockerfile/
 - Compose file reference - https://docs.docker.com/reference/compose-file/
 - Distroless - https://github.com/GoogleContainerTools/distroless
@@ -125,6 +129,7 @@ Resources:
 - (helpful) HPA vs KEDA, scale-to-zero, cooldown/polling intervals.
 
 Resources:
+
 - Kubernetes basics - https://kubernetes.io/docs/tutorials/kubernetes-basics/
 - kind - https://kind.sigs.k8s.io/
 - Helm - https://helm.sh/docs/
@@ -138,6 +143,7 @@ Resources:
 - (helpful) Propagating trace context across SQS (via message attributes) and HTTP (via headers).
 
 Resources:
+
 - OpenTelemetry Go - https://opentelemetry.io/docs/languages/go/
 - Getting started (Go) - https://opentelemetry.io/docs/languages/go/getting-started/
 - grafana/otel-lgtm - https://github.com/grafana/docker-otel-lgtm
