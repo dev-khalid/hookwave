@@ -1,1 +1,29 @@
 package main
+
+import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/dev-khalid/hookwave/internal/observability"
+)
+
+const serviceName = "subscriber"
+
+func main() {
+	logger, err := observability.NewLogger(serviceName)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Sync()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	logger.Info("starting")
+
+	<-ctx.Done()
+
+	logger.Info("shutting down")
+}
