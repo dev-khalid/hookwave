@@ -12,8 +12,6 @@ import (
 const serviceName = "processor"
 
 func main() {
-
-	
 	logger, err := observability.NewLogger(serviceName)
 	if err != nil {
 		panic(err)
@@ -26,6 +24,6 @@ func main() {
 	logger.Info("Processor running...")
 
 	<-ctx.Done()
- 
+
 	logger.Info("Processor shutting down...")
 }
