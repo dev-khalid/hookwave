@@ -3,31 +3,25 @@ package config
 import (
 	"fmt"
 	"os"
-)
 
-type SQSConfig struct {
-	QueueName          string
-	Endpoint           string // empty = real AWS; non-empty = override (ElasticMQ, etc.)
-	Region             string
-	AWSAccessKeyID     string // populated only when env var is set; empty = use default credential chain
-	AWSSecretAccessKey string
-}
+	"github.com/dev-khalid/hookwave/internal/queue"
+)
 
 const defaultQueueName = "webhook-events"
 const defaultRegion = "us-east-1"
 
-func LoadSQSConfig() (SQSConfig, error) {
+func loadSQSConfig() (queue.Config, error) {
 	queueName := getEnv("SQS_QUEUE_NAME", defaultQueueName)
 	region := getEnv("AWS_REGION", defaultRegion)
 
 	if queueName == "" {
-		return SQSConfig{}, fmt.Errorf("SQS_QUEUE_NAME is required")
+		return queue.Config{}, fmt.Errorf("SQS_QUEUE_NAME is required")
 	}
 	if region == "" {
-		return SQSConfig{}, fmt.Errorf("AWS_REGION is required")
+		return queue.Config{}, fmt.Errorf("AWS_REGION is required")
 	}
 
-	cfg := SQSConfig{
+	cfg := queue.Config{
 		QueueName: queueName,
 		Endpoint:  os.Getenv("SQS_ENDPOINT"),
 		Region:    region,

@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,8 +11,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 
-	"github.com/dev-khalid/hookwave/internal/config"
+	"github.com/dev-khalid/hookwave/internal/events"
 )
+
+// Config holds the parameters needed to connect to an SQS-compatible endpoint.
+type Config struct {
+	QueueName          string
+	Endpoint           string // empty = real AWS; non-empty = override (ElasticMQ, etc.)
+	Region             string
+	AWSAccessKeyID     string // empty = use SDK default credential chain
+	AWSSecretAccessKey string
+}
 
 // Publisher is satisfied by Client and useful for test doubles.
 type Publisher interface {
@@ -35,8 +45,8 @@ type Message struct {
 
 // Client wraps the AWS SQS SDK and satisfies both Publisher and Consumer.
 type Client struct {
-	inner    *sqs.Client
-	queueURL string
+	awsSqsClient *sqs.Client
+	queueURL     string
 }
 
 // NewClient creates a Client and ensures the queue exists.
@@ -48,7 +58,7 @@ type Client struct {
 // Endpoint resolution:
 //   - cfg.Endpoint non-empty → override (ElasticMQ or any custom endpoint)
 //   - cfg.Endpoint empty     → real AWS endpoint
-func NewClient(ctx context.Context, cfg config.SQSConfig) (*Client, error) {
+func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	opts := []func(*awsconfig.LoadOptions) error{
 		awsconfig.WithRegion(cfg.Region),
 	}
@@ -64,13 +74,13 @@ func NewClient(ctx context.Context, cfg config.SQSConfig) (*Client, error) {
 		return nil, fmt.Errorf("load AWS config: %w", err)
 	}
 
-	inner := sqs.NewFromConfig(awsCfg, func(o *sqs.Options) {
+	awsSqsClient := sqs.NewFromConfig(awsCfg, func(o *sqs.Options) {
 		if cfg.Endpoint != "" {
 			o.BaseEndpoint = aws.String(cfg.Endpoint)
 		}
 	})
 
-	c := &Client{inner: inner}
+	c := &Client{awsSqsClient: awsSqsClient}
 	if err := c.ensureQueue(ctx, cfg.QueueName); err != nil {
 		return nil, err
 	}
@@ -81,9 +91,19 @@ func NewClient(ctx context.Context, cfg config.SQSConfig) (*Client, error) {
 // QueueURL returns the resolved queue URL.
 func (c *Client) QueueURL() string { return c.queueURL }
 
-// Publish sends a message. Satisfies the Publisher interface.
+// PublishEvent marshals a typed event to JSON and publishes it.
+// Only concrete types listed in ListedEventTypes are accepted — others are a compile error.
+func PublishEvent[E events.ListedEventTypes](ctx context.Context, c Publisher, event E, attrs map[string]string) error {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("marshal event: %w", err)
+	}
+	return c.Publish(ctx, b, attrs)
+}
+
+// Publish sends a raw message body. Satisfies the Publisher interface.
 func (c *Client) Publish(ctx context.Context, body []byte, attrs map[string]string) error {
-	_, err := c.inner.SendMessage(ctx, &sqs.SendMessageInput{
+	_, err := c.awsSqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 		QueueUrl:          aws.String(c.queueURL),
 		MessageBody:       aws.String(string(body)),
 		MessageAttributes: StringAttributes(attrs),
@@ -96,7 +116,7 @@ func (c *Client) Publish(ctx context.Context, body []byte, attrs map[string]stri
 
 // SendMessage sends a message and returns the SQS-assigned message ID.
 func (c *Client) SendMessage(ctx context.Context, body []byte, attrs map[string]string) (string, error) {
-	out, err := c.inner.SendMessage(ctx, &sqs.SendMessageInput{
+	out, err := c.awsSqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 		QueueUrl:          aws.String(c.queueURL),
 		MessageBody:       aws.String(string(body)),
 		MessageAttributes: StringAttributes(attrs),
@@ -109,7 +129,7 @@ func (c *Client) SendMessage(ctx context.Context, body []byte, attrs map[string]
 
 // ReceiveMessages long-polls the queue. Use waitSeconds=20 for max long-poll efficiency.
 func (c *Client) ReceiveMessages(ctx context.Context, maxCount int32, waitSeconds int32) ([]Message, error) {
-	out, err := c.inner.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+	out, err := c.awsSqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 		QueueUrl:              aws.String(c.queueURL),
 		MaxNumberOfMessages:   maxCount,
 		WaitTimeSeconds:       waitSeconds,
@@ -128,7 +148,7 @@ func (c *Client) ReceiveMessages(ctx context.Context, maxCount int32, waitSecond
 
 // DeleteMessage acknowledges a message, removing it from the queue.
 func (c *Client) DeleteMessage(ctx context.Context, receiptHandle string) error {
-	_, err := c.inner.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+	_, err := c.awsSqsClient.DeleteMessage(ctx, &sqs.DeleteMessageInput{
 		QueueUrl:      aws.String(c.queueURL),
 		ReceiptHandle: aws.String(receiptHandle),
 	})
@@ -140,7 +160,7 @@ func (c *Client) DeleteMessage(ctx context.Context, receiptHandle string) error 
 
 // ChangeMessageVisibility extends or reduces the visibility timeout of an in-flight message.
 func (c *Client) ChangeMessageVisibility(ctx context.Context, receiptHandle string, seconds int32) error {
-	_, err := c.inner.ChangeMessageVisibility(ctx, &sqs.ChangeMessageVisibilityInput{
+	_, err := c.awsSqsClient.ChangeMessageVisibility(ctx, &sqs.ChangeMessageVisibilityInput{
 		QueueUrl:          aws.String(c.queueURL),
 		ReceiptHandle:     aws.String(receiptHandle),
 		VisibilityTimeout: seconds,
@@ -152,13 +172,16 @@ func (c *Client) ChangeMessageVisibility(ctx context.Context, receiptHandle stri
 }
 
 func (c *Client) ensureQueue(ctx context.Context, name string) error {
-	out, err := c.inner.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
+	out, err := c.awsSqsClient.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
 	if err == nil && aws.ToString(out.QueueUrl) != "" {
 		c.queueURL = *out.QueueUrl
 		return nil
 	}
 
-	created, createErr := c.inner.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(name)})
+	created, createErr := c.awsSqsClient.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(name), Attributes: map[string]string{
+		"ReceiveMessageWaitTimeSeconds": "5",  // default long-poll wait time for the queue
+		"VisibilityTimeout":             "60", // default visibility timeout for messages in the queue
+	}})
 	if createErr != nil {
 		return fmt.Errorf("ensure SQS queue %q (get: %v): %w", name, err, createErr)
 	}
