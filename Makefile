@@ -8,19 +8,19 @@ build:
 	go build -o $(BIN_DIR)/subscriber ./cmd/subscriber
 
 up:
-	docker compose -f deploy/compose/docker-compose.yaml up -d
+	docker-compose -f deploy/compose/docker-compose.yaml up -d
 
 down:
-	docker compose -f deploy/compose/docker-compose.yaml down
+	docker-compose -f deploy/compose/docker-compose.yaml down
 
 run-producer:
-	go run ./cmd/producer
+	@set -a; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/producer
 
 run-processor:
-	go run ./cmd/processor
+	@set -a; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/processor
 
 run-subscriber:
-	go run ./cmd/subscriber
+	@set -a; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/subscriber
 
 latest-message:
 	@set -a; [ ! -f .env ] || . ./.env; set +a; \

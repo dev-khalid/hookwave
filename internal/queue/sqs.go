@@ -30,7 +30,7 @@ type Publisher interface {
 
 // Consumer is satisfied by Client and useful for test doubles.
 type Consumer interface {
-	ReceiveMessages(ctx context.Context, maxCount int32, waitSeconds int32) ([]Message, error)
+	ReceiveMessages(ctx context.Context, maxCount int32) ([]Message, error)
 	DeleteMessage(ctx context.Context, receiptHandle string) error
 	ChangeMessageVisibility(ctx context.Context, receiptHandle string, seconds int32) error
 }
@@ -48,6 +48,9 @@ type Client struct {
 	awsSqsClient *sqs.Client
 	queueURL     string
 }
+
+const DefaultWaitTimeSeconds int32 = 20
+const DefaultMessageVisibilityTimeout = "60"
 
 // NewClient creates a Client and ensures the queue exists.
 //
@@ -127,12 +130,12 @@ func (c *Client) SendMessage(ctx context.Context, body []byte, attrs map[string]
 	return aws.ToString(out.MessageId), nil
 }
 
-// ReceiveMessages long-polls the queue. Use waitSeconds=20 for max long-poll efficiency.
-func (c *Client) ReceiveMessages(ctx context.Context, maxCount int32, waitSeconds int32) ([]Message, error) {
+// ReceiveMessages long-polls the queue.
+func (c *Client) ReceiveMessages(ctx context.Context, maxCount int32) ([]Message, error) {
 	out, err := c.awsSqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 		QueueUrl:              aws.String(c.queueURL),
 		MaxNumberOfMessages:   maxCount,
-		WaitTimeSeconds:       waitSeconds,
+		WaitTimeSeconds:       DefaultWaitTimeSeconds,
 		MessageAttributeNames: []string{"All"},
 	})
 	if err != nil {
@@ -179,8 +182,8 @@ func (c *Client) ensureQueue(ctx context.Context, name string) error {
 	}
 
 	created, createErr := c.awsSqsClient.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(name), Attributes: map[string]string{
-		"ReceiveMessageWaitTimeSeconds": "5",  // default long-poll wait time for the queue
-		"VisibilityTimeout":             "60", // default visibility timeout for messages in the queue
+		"ReceiveMessageWaitTimeSeconds": fmt.Sprintf("%d", DefaultWaitTimeSeconds),
+		"VisibilityTimeout":             DefaultMessageVisibilityTimeout,
 	}})
 	if createErr != nil {
 		return fmt.Errorf("ensure SQS queue %q (get: %v): %w", name, err, createErr)
