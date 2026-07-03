@@ -139,7 +139,9 @@ Resources:
 ## Phase I - OpenTelemetry (Sprint 4)
 
 - (must) Concepts: trace, span, context propagation, metrics, the OTLP exporter, resource attributes.
-- (must) Go SDK wiring: `TracerProvider`, `MeterProvider`, OTLP exporter, graceful `Shutdown`.
+- (must) Go SDK wiring: `TracerProvider`, `MeterProvider`, `LoggerProvider`, OTLP exporter, graceful `Shutdown`.
+- (must) Log-trace correlation: why a log line needs `trace_id`/`span_id` to be useful, and bridging an
+  existing logger (zap) into OTel Logs (e.g. `go.opentelemetry.io/contrib/bridges/otelzap`).
 - (helpful) Propagating trace context across SQS (via message attributes) and HTTP (via headers).
 
 Resources:

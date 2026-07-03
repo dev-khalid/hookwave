@@ -149,6 +149,8 @@ Each service:
 - Emits **traces**: a producer span -> SQS -> a processor span -> HTTP -> a subscriber span, so you
   can see end-to-end latency and find the bottleneck (queue wait vs HTTP delivery vs S3 write).
 - Emits **metrics**: throughput, delivery success/failure counts, queue receive latency.
+- Emits **logs** correlated to the active trace (`trace_id`/`span_id` on every log line), exported to
+  Loki so you can jump from a slow/failed span straight to its log lines.
 - Sends OTLP to `http://otel-lgtm:4318` (HTTP) or `:4317` (gRPC); Grafana is at `:3000` (admin/admin).
 
 This is exactly how you answer "where is the bottleneck - data layer or app layer?": compare span
