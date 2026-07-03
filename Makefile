@@ -1,6 +1,9 @@
-.PHONY: build up down run-producer run-processor run-subscriber latest-message ack-latest-message test lint fmt tidy
+.PHONY: build up down run-producer run-producer-burst run-processor run-subscriber latest-message ack-latest-message test lint fmt tidy
 
 BIN_DIR := bin
+
+COUNT ?= 1000
+WORKERS ?= 50
 
 build:
 	go build -o $(BIN_DIR)/producer   ./cmd/producer
@@ -15,6 +18,11 @@ down:
 
 run-producer:
 	@set -a; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/producer
+
+# make run-producer-burst COUNT=200 WORKERS=20
+run-producer-burst:
+	@set -a; [ ! -f .env ] || . ./.env; set +a; \
+	PRODUCE_BURST=$(COUNT) PRODUCE_WORKERS=$(WORKERS) go run ./cmd/producer
 
 run-processor:
 	@set -a; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/processor
