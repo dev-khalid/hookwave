@@ -51,6 +51,8 @@ type Client struct {
 
 const DefaultWaitTimeSeconds int32 = 20
 const DefaultMessageVisibilityTimeout = "60"
+const DefaultMaxReceiveCount = 3
+const dlqSuffix = "-dlq"
 
 // NewClient creates a Client and ensures the queue exists.
 //
@@ -84,7 +86,13 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	})
 
 	c := &Client{awsSqsClient: awsSqsClient}
-	if err := c.ensureQueue(ctx, cfg.QueueName); err != nil {
+
+	dlqArn, err := c.ensureDLQ(ctx, cfg.QueueName+dlqSuffix)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.ensureQueue(ctx, cfg.QueueName, dlqArn); err != nil {
 		return nil, err
 	}
 
@@ -174,17 +182,29 @@ func (c *Client) ChangeMessageVisibility(ctx context.Context, receiptHandle stri
 	return nil
 }
 
-func (c *Client) ensureQueue(ctx context.Context, name string) error {
+// ensureQueue gets-or-creates the main queue and (re)applies its attributes,
+// including the redrive policy — this keeps existing queues (created before
+// the DLQ was wired up) in sync, not just newly-created ones.
+func (c *Client) ensureQueue(ctx context.Context, name string, dlqArn string) error {
+	attrs := map[string]string{
+		"ReceiveMessageWaitTimeSeconds": fmt.Sprintf("%d", DefaultWaitTimeSeconds),
+		"VisibilityTimeout":             DefaultMessageVisibilityTimeout,
+		"RedrivePolicy":                 fmt.Sprintf(`{"deadLetterTargetArn":%q,"maxReceiveCount":"%d"}`, dlqArn, DefaultMaxReceiveCount),
+	}
+
 	out, err := c.awsSqsClient.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
 	if err == nil && aws.ToString(out.QueueUrl) != "" {
 		c.queueURL = *out.QueueUrl
+		if _, setErr := c.awsSqsClient.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl:   aws.String(c.queueURL),
+			Attributes: attrs,
+		}); setErr != nil {
+			return fmt.Errorf("set attributes on SQS queue %q: %w", name, setErr)
+		}
 		return nil
 	}
 
-	created, createErr := c.awsSqsClient.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(name), Attributes: map[string]string{
-		"ReceiveMessageWaitTimeSeconds": fmt.Sprintf("%d", DefaultWaitTimeSeconds),
-		"VisibilityTimeout":             DefaultMessageVisibilityTimeout,
-	}})
+	created, createErr := c.awsSqsClient.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(name), Attributes: attrs})
 	if createErr != nil {
 		return fmt.Errorf("ensure SQS queue %q (get: %v): %w", name, err, createErr)
 	}
@@ -194,6 +214,40 @@ func (c *Client) ensureQueue(ctx context.Context, name string) error {
 
 	c.queueURL = *created.QueueUrl
 	return nil
+}
+
+// ensureDLQ gets-or-creates the dead-letter queue for name and returns its ARN,
+// which ensureQueue needs to wire the main queue's RedrivePolicy.
+func (c *Client) ensureDLQ(ctx context.Context, name string) (string, error) {
+	out, err := c.awsSqsClient.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{QueueName: aws.String(name)})
+	var dlqURL string
+	if err == nil {
+		dlqURL = aws.ToString(out.QueueUrl)
+	}
+	if dlqURL == "" {
+		created, createErr := c.awsSqsClient.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: aws.String(name)})
+		if createErr != nil {
+			return "", fmt.Errorf("ensure DLQ %q (get: %v): %w", name, err, createErr)
+		}
+		dlqURL = aws.ToString(created.QueueUrl)
+		if dlqURL == "" {
+			return "", fmt.Errorf("create DLQ %q returned empty URL", name)
+		}
+	}
+
+	attrsOut, err := c.awsSqsClient.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl:       aws.String(dlqURL),
+		AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+	})
+	if err != nil {
+		return "", fmt.Errorf("get DLQ %q ARN: %w", name, err)
+	}
+	arn := attrsOut.Attributes[string(types.QueueAttributeNameQueueArn)]
+	if arn == "" {
+		return "", fmt.Errorf("DLQ %q has no ARN", name)
+	}
+
+	return arn, nil
 }
 
 func toMessage(m types.Message) Message {

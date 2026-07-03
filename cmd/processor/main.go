@@ -23,6 +23,10 @@ const MaxNumberOfMessagePerBatch = 10
 const MessagePollingWorkers = 50
 const DefaultTimeout = 10 * time.Second
 
+// FakeAPITimeoutRate simulates roughly 1-in-N calls hanging past DefaultTimeout,
+// so the timeout/retry/DLQ path gets exercised deliberately instead of by accident.
+const FakeAPITimeoutRate = 5
+
 func main() {
 	logger, err := observability.NewLogger(serviceName)
 	if err != nil {
@@ -78,23 +82,24 @@ func main() {
 }
 
 func processEvents(ctx context.Context, client *queue.Client, messages []queue.Message, logger observability.Logger) {
+	fmt.Printf("Processing %d messages...\n", len(messages))
 	// The processes should be concurrent. And the parent should wait for these processes to be complete.
 	var wg sync.WaitGroup
 	for _, message := range messages {
 		wg.Add(1)
-		go func(message queue.Message) {
+		go func(message *queue.Message) {
 			defer wg.Done()
 			// Process event
 			if err := processEvent(ctx, client, message); err != nil {
 				logger.Error("failed to process event", "error", err, "message_id", message.MessageID)
 			}
-		}(message)
+		}(&message)
 	}
 
 	wg.Wait()
 }
 
-func processEvent(ctx context.Context, client *queue.Client, message queue.Message) error {
+func processEvent(ctx context.Context, client *queue.Client, message *queue.Message) error {
 	// Decode the envelope once. `Data` stays raw until we know which concrete
 	// type it is — this is the only difference from a plain decode-then-switch:
 	// it avoids re-parsing id/type/occurred_at a second time per branch.
@@ -159,12 +164,19 @@ func processEvent(ctx context.Context, client *queue.Client, message queue.Messa
 // fakeApiCall is generic so each call site keeps its concrete event type (order.OrderCreatedEvent,
 // etc.) instead of widening to `any` — T is inferred from the argument at compile time.
 func fakeApiCall(id string) error {
-	sleepTime := rand.Intn(20000) + 100
+	var sleepTime time.Duration
+	if rand.Intn(FakeAPITimeoutRate) == 0 {
+		// Deliberately hang past DefaultTimeout.
+		sleepTime = DefaultTimeout + time.Duration(rand.Intn(5000)+100)*time.Millisecond
+	} else {
+		// Normal latency, comfortably under DefaultTimeout.
+		sleepTime = time.Duration(rand.Intn(2000)+100) * time.Millisecond
+	}
 	// Buffered so the goroutine's send never blocks if ctx.Done() wins the
 	// select below — otherwise a timed-out call leaks this goroutine forever.
 	resultCh := make(chan bool, 1)
 	go func() {
-		time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+		time.Sleep(sleepTime)
 		resultCh <- true
 	}()
 	// I need to race between timeout time vs sleepTime
