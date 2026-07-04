@@ -35,7 +35,7 @@ func generateSubscriptionsFile(path string, count int) error {
 		subs[i] = subscription{
 			Events:    randomEventSubset(),
 			URL:       fmt.Sprintf("http://localhost:3000/%s", gofakeit.UUID()),
-			CompanyID: gofakeit.IntRange(1, 100),
+			CompanyID: gofakeit.IntRange(1, 10),
 		}
 	}
 
