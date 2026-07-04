@@ -29,6 +29,7 @@ type BaseOrderEvent struct {
 	ID         string    `json:"id"`
 	Type       EventType `json:"type"`
 	OccurredAt time.Time `json:"occurred_at"`
+	CompanyID  int       `json:"company_id"`
 }
 
 type BaseOrderData struct {

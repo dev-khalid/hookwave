@@ -124,6 +124,7 @@ func newOrderCreated() *order.OrderCreatedEvent {
 			ID:         gofakeit.UUID(),
 			Type:       order.OrderCreatedEventType,
 			OccurredAt: time.Now().UTC(),
+			CompanyID:  gofakeit.IntRange(1, 100),
 		},
 		Data: order.OrderCreatedData{
 			BaseOrderData: order.BaseOrderData{
@@ -149,6 +150,7 @@ func newOrderUpdated() *order.OrderUpdatedEvent {
 			ID:         gofakeit.UUID(),
 			Type:       order.OrderUpdatedEventType,
 			OccurredAt: time.Now().UTC(),
+			CompanyID:  gofakeit.IntRange(1, 100),
 		},
 		Data: order.OrderUpdatedData{
 			BaseOrderData: order.BaseOrderData{
@@ -181,6 +183,7 @@ func newOrderShipped() *order.OrderShippedEvent {
 			ID:         gofakeit.UUID(),
 			Type:       order.OrderShippedEventType,
 			OccurredAt: shipped,
+			CompanyID:  gofakeit.IntRange(1, 100),
 		},
 		Data: order.OrderShippedData{
 			BaseOrderData: order.BaseOrderData{

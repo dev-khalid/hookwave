@@ -37,9 +37,11 @@ three services starts and prints a log line.
    `lint` (`golangci-lint run`), `fmt` (`gofmt -w .`), `tidy` (`go mod tidy`).
 8. **Install and configure golangci-lint.** Add a minimal `.golangci.yml` enabling at least
    `govet`, `staticcheck`, `errcheck`, `ineffassign`, `gofmt`.
-9. **Create `configs/subscriptions.yaml`** as a placeholder with the shape you'll use in Sprint 2
-   (a list of subscribers, each with `id`, `url`, `method`, and `events: [order.created, ...]`).
-   You won't read it yet - just commit the shape.
+9. **Create `configs/subscriptions.json`** as a placeholder with the shape you'll use in Sprint 2
+   (a list of subscribers, each with `events: [order.created, ...]`, `url`, and `company_id`).
+   This file is not hand-written - `cmd/subscriber` generates it (`GENERATE_SUBSCRIPTIONS=N` /
+   `make generate-subscriptions`) with random fake entries. Run it once to commit the shape;
+   you won't load it yet - that's Sprint 2.
 10. **Copy a trimmed architecture into `docs/ARCHITECTURE.md`** (the repo's own doc, separate from `plans/`).
 
 ## Suggested package responsibilities (so you don't blur boundaries later)

@@ -1,9 +1,10 @@
-.PHONY: build up down run-producer run-producer-burst run-processor run-subscriber latest-message ack-latest-message test lint fmt tidy
+.PHONY: build up down run-producer run-producer-burst run-processor run-subscriber generate-subscriptions latest-message ack-latest-message test lint fmt tidy
 
 BIN_DIR := bin
 
 COUNT ?= 1000
 WORKERS ?= 50
+SUBS_COUNT ?= 100
 
 build:
 	go build -o $(BIN_DIR)/producer   ./cmd/producer
@@ -29,6 +30,11 @@ run-processor:
 
 run-subscriber:
 	@set -a; [ ! -f .env ] || . ./.env; set +a; go run ./cmd/subscriber
+
+# make generate-subscriptions SUBS_COUNT=100
+generate-subscriptions:
+	@set -a; [ ! -f .env ] || . ./.env; set +a; \
+	GENERATE_SUBSCRIPTIONS=$(SUBS_COUNT) go run ./cmd/subscriber
 
 latest-message:
 	@set -a; [ ! -f .env ] || . ./.env; set +a; \

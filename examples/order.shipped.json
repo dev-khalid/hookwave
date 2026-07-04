@@ -2,6 +2,7 @@
   "id": "b7e1a9d3-5c6f-4a2b-8d0e-3a1c5e7f9b2d",
   "type": "order.shipped",
   "occurred_at": "2026-06-02T14:47:05Z",
+  "company_id": 42,
   "data": {
     "order_id": "ord_10428",
     "customer_id": "cus_5567",

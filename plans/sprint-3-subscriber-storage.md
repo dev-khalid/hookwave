@@ -48,9 +48,12 @@ type ObjectStore interface {
    call `Deliver`. Decide the ack rule: delete the SQS message only if all deliveries for it succeeded;
    otherwise leave it for redelivery (this is your at-least-once behavior, retries/DLQ come in Nice-to-have).
    Document this rule in code comments.
-6. **Point `subscriptions.yaml` at the subscriber.** Add one (or more) subscription entries whose `url`
-   is the subscriber service (`http://subscriber:8080/webhooks` in compose, `http://localhost:PORT/...`
-   when running locally) and `events` lists the types you produce.
+6. **Point `subscriptions.json` at the subscriber.** Re-run `make generate-subscriptions` (or
+   `GENERATE_SUBSCRIPTIONS=N go run ./cmd/subscriber`) so at least one generated entry's `url` is the
+   subscriber service (`http://subscriber:8080/webhooks` in compose, `http://localhost:PORT/...` when
+   running locally) and `events` lists the types you produce. This file is generated, not hand-edited -
+   see the Sprint 2 decision note: subscriptions load from `configs/subscriptions.json`, not a
+   `subscriptions.yaml`.
 
 ## Definition of Done
 

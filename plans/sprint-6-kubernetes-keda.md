@@ -24,7 +24,7 @@ design scales horizontally.
    the cluster can run them without a registry.
 3. **Write Helm charts in `deploy/helm/`.** Start with an umbrella chart and subcharts (or one chart with
    templated components) for: producer, processor, subscriber, ElasticMQ, MinIO. Each app gets a
-   Deployment + Service; config via ConfigMap; creds via Secret. Mount `subscriptions.yaml` via ConfigMap.
+   Deployment + Service; config via ConfigMap; creds via Secret. Mount `subscriptions.json` via ConfigMap.
 4. **Install infra first** (ElasticMQ, MinIO), verify pods are healthy and reachable in-cluster
    (`kubectl port-forward` to check UIs). Then install the apps; verify the end-to-end flow works in-cluster
    (producer interval mode -> objects appear in MinIO).
