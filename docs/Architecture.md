@@ -18,8 +18,9 @@ We simulate that with three Go services plus infrastructure.
 - **Service 3 - sample-subscriber**: a stand-in customer endpoint. Exposes an HTTP handler,
   receives deliveries, and stores each payload to **S3** (**MinIO** locally).
 
-Delivery is **at-least-once** and best-effort for the core build. Retries / dead-letter queue /
-HMAC signing are explicitly Nice-to-have (Section 9).
+Delivery is **at-least-once** and best-effort for the core build. The SQS-level dead-letter queue
+(redrive after `DefaultMaxReceiveCount` receives) is already implemented in `internal/queue`. Delivery
+retries with backoff and HMAC signing are explicitly Nice-to-have (Section 9).
 
 ## 2. System diagram
 
@@ -164,8 +165,9 @@ Terraform IaC and EKS manifests are documented as Nice-to-have, not built in the
 
 ## 9. Nice-to-have (explicitly optional, not mandated)
 
-- **Reliability**: delivery retries with exponential backoff, a dead-letter queue, and an HMAC
-  signature header on each delivery (so subscribers can verify authenticity).
+- **Reliability**: delivery retries with exponential backoff and an HMAC signature header on each
+  delivery (so subscribers can verify authenticity). (The dead-letter queue itself is already built -
+  see Section 1 - this item is about retry/backoff logic on top of it.)
 - **Subscription management API + Postgres** to replace the generated JSON config.
 - **Integration tests** with `testcontainers-go` against ElasticMQ/MinIO.
 - **Loki** log correlation and log-based dashboards.

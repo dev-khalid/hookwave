@@ -46,7 +46,9 @@ type ObjectStore interface {
    - treats 2xx as success; non-2xx or transport error as failure (return an error).
 5. **Wire processor delivery (replaces Sprint 2's log-only step):** for each matched subscription,
    call `Deliver`. Decide the ack rule: delete the SQS message only if all deliveries for it succeeded;
-   otherwise leave it for redelivery (this is your at-least-once behavior, retries/DLQ come in Nice-to-have).
+   otherwise leave it for redelivery (this is your at-least-once behavior; the SQS dead-letter queue in
+   `internal/queue` already redrives after repeated failures - delivery retry/backoff logic on top of
+   that is Nice-to-have).
    Document this rule in code comments.
 6. **Point `subscriptions.json` at the subscriber.** Re-run `make generate-subscriptions` (or
    `GENERATE_SUBSCRIPTIONS=N go run ./cmd/subscriber`) so at least one generated entry's `url` is the
