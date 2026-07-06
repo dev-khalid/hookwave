@@ -141,10 +141,10 @@ func newOrderCreated() *order.OrderCreatedEvent {
 }
 
 func newOrderUpdated() *order.OrderUpdatedEvent {
-	from := gofakeit.RandomString([]string{
+	from := order.OrderStatus(gofakeit.RandomString([]string{
 		string(order.OrderStatusCreated),
 		string(order.OrderStatusUpdated),
-	})
+	}))
 	return &order.OrderUpdatedEvent{
 		BaseOrderEvent: order.BaseOrderEvent{
 			ID:         gofakeit.UUID(),
@@ -163,7 +163,7 @@ func newOrderUpdated() *order.OrderUpdatedEvent {
 			PreviousStatus: from,
 			Changes: order.Changes{
 				Status: order.StatusChange{
-					From: from,
+					From: string(from),
 					To:   string(order.OrderStatusUpdated),
 				},
 				Payment: order.PaymentInfo{

@@ -10,6 +10,12 @@ const (
 	OrderShippedEventType EventType = "order.shipped"
 )
 
+var ListedEventTypes = []EventType{
+	OrderCreatedEventType,
+	OrderUpdatedEventType,
+	OrderShippedEventType,
+}
+
 type OrderStatus string
 
 const (
@@ -77,8 +83,8 @@ type OrderUpdatedEvent struct {
 
 type OrderUpdatedData struct {
 	BaseOrderData
-	PreviousStatus string  `json:"previous_status"`
-	Changes        Changes `json:"changes"`
+	PreviousStatus OrderStatus `json:"previous_status"`
+	Changes        Changes     `json:"changes"`
 }
 
 type Changes struct {

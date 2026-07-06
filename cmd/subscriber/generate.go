@@ -7,32 +7,24 @@ import (
 	"path/filepath"
 
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/google/uuid"
 
 	"github.com/dev-khalid/hookwave/internal/events/order"
+	"github.com/dev-khalid/hookwave/internal/subscriber"
 )
 
 const defaultSubscriptionsFile = "configs/subscriptions.json"
 
-var listedEventTypes = []string{
-	string(order.OrderCreatedEventType),
-	string(order.OrderUpdatedEventType),
-	string(order.OrderShippedEventType),
-}
-
-// subscription is the seed shape for configs/subscriptions.json - the processor
+// Subscription is the seed shape for configs/subscriptions.json - the processor
 // will load this file to match events to subscriber URLs (see plans/sprint-2-processor.md).
-type subscription struct {
-	Events    []string `json:"events"`
-	URL       string   `json:"url"`
-	CompanyID int      `json:"company_id"`
-}
 
 // generateSubscriptionsFile writes count random subscriptions to path, creating
 // parent directories as needed.
 func generateSubscriptionsFile(path string, count int) error {
-	subs := make([]subscription, count)
+	subs := make([]subscriber.Subscription, count)
 	for i := range subs {
-		subs[i] = subscription{
+		subs[i] = subscriber.Subscription{
+			ID:        uuid.New(),
 			Events:    randomEventSubset(),
 			URL:       fmt.Sprintf("http://localhost:3000/%s", gofakeit.UUID()),
 			CompanyID: gofakeit.IntRange(1, 10),
@@ -56,11 +48,23 @@ func generateSubscriptionsFile(path string, count int) error {
 }
 
 // randomEventSubset picks 1-3 unique event types from the listed event types.
-func randomEventSubset() []string {
-	pool := make([]string, len(listedEventTypes))
-	copy(pool, listedEventTypes)
-	gofakeit.ShuffleStrings(pool)
+func randomEventSubset() []order.EventType {
+	pool := make([]order.EventType, len(order.ListedEventTypes))
+	copy(pool, order.ListedEventTypes)
 
-	n := gofakeit.IntRange(1, len(pool))
-	return pool[:n]
+	// Convert to strings for shuffling
+	strPool := make([]string, len(pool))
+	for i, et := range pool {
+		strPool[i] = string(et)
+	}
+	gofakeit.ShuffleStrings(strPool)
+
+	// Convert back to EventType
+	result := make([]order.EventType, len(strPool))
+	for i, s := range strPool {
+		result[i] = order.EventType(s)
+	}
+
+	n := gofakeit.IntRange(1, len(result))
+	return result[:n]
 }
