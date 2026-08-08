@@ -11,11 +11,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 )
+
+type contextKey string
+
+const requestBodyContextKey contextKey = "requestBody"
 
 type responseWriter struct {
 	http.ResponseWriter
@@ -29,12 +34,9 @@ func (rw *responseWriter) WriteHeader(code int) {
 }
 
 func main() {
-	http.HandleFunc("POST /api/{id}/user", loggerMiddleware(func(res http.ResponseWriter, req *http.Request) {
+	http.HandleFunc("POST /api/{id}/user", loggerMiddleware(requestDataValidationMiddleware(func(res http.ResponseWriter, req *http.Request) {
 
-		defer req.Body.Close()
-		var requestBody map[string]interface{}
-
-		json.NewDecoder(req.Body).Decode(&requestBody)
+		requestBody, _ := req.Context().Value(requestBodyContextKey).(map[string]interface{})
 
 		requestMetadata := map[string]interface{}{
 			"host":      req.Host,
@@ -43,11 +45,16 @@ func main() {
 			"body":      requestBody,
 			"pathParam": req.PathValue("id"),
 		}
-		requestData, _ := json.Marshal(requestMetadata)
+		requestData, err := json.Marshal(requestMetadata)
+		if err != nil {
+			log.Println("Failed to marshal response:", err)
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		log.Println("Request data: ", string(requestData))
 		res.WriteHeader(202)
 		res.Write(requestData)
-	}))
+	})))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -80,3 +87,34 @@ func loggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		log.Println("Response Status Code: ", wrapped.statusCode)
 	}
 }
+
+func requestDataValidationMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			defer r.Body.Close()
+			var requestBody map[string]interface{}
+
+			if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"error": "Invalid or missing JSON body",
+				})
+				return
+			}
+
+			if requestBody["name"] == nil || requestBody["email"] == nil {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"error": "Missing required fields: name and email",
+				})
+				return
+			}
+
+			r = r.WithContext(context.WithValue(r.Context(), requestBodyContextKey, requestBody))
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Need to go through the Chi router doc.
