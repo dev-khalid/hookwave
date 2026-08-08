@@ -26,7 +26,8 @@ func generateSubscriptionsFile(path string, count int) error {
 		subs[i] = subscriber.Subscription{
 			ID:        uuid.New(),
 			Events:    randomEventSubset(),
-			URL:       fmt.Sprintf("http://localhost:3000/%s", gofakeit.UUID()),
+			URL:       fmt.Sprintf("http://localhost:3000/api/v1/webhook-listener/%s", gofakeit.UUID()),
+			Method:    gofakeit.RandomString([]string{"POST", "PUT"}),
 			CompanyID: gofakeit.IntRange(1, 10),
 		}
 	}

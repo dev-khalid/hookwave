@@ -11,6 +11,7 @@ type Subscription struct {
 	ID        uuid.UUID         `json:"id"`
 	Events    []order.EventType `json:"events"`
 	URL       string            `json:"url"`
+	Method    string            `json:"method"`
 	CompanyID int               `json:"company_id"`
 }
 
