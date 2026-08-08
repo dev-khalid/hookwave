@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,9 +9,8 @@ import (
 	"time"
 
 	"github.com/dev-khalid/hookwave/internal/observability"
+	"github.com/dev-khalid/hookwave/internal/subscriber/routers"
 	"github.com/dev-khalid/hookwave/internal/utility"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 const serviceName = "subscriber"
@@ -38,28 +36,13 @@ func main() {
 		return
 	}
 
-	router := chi.NewRouter()
-
-	router.Get("/long-running-work", func(w http.ResponseWriter, r *http.Request) {
-		// Simulate long-running work
-		time.Sleep(8 * time.Second)
-		w.WriteHeader(200)
-		w.Write([]byte(`{"message": "Long running work completed"}`))
-	})
-
-	apiRouter := chi.NewRouter()
-	apiRouter.Use(middleware.Logger)
-	apiRouter.Get("/health", healthHandler)
-
-	apiRouter.Mount("/api/v1", router)
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	logger.Info("starting")
 
 	server := &http.Server{
 		Addr:    ":8080",
-		Handler: apiRouter,
+		Handler: routers.SubscriberRouter(),
 	}
 
 	go func() {
@@ -80,30 +63,5 @@ func main() {
 	}
 
 	cancel()
-
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	type ServerStatusType string
-
-	const (
-		StatusOk    ServerStatusType = "OK"
-		StatusError ServerStatusType = "ERROR"
-	)
-
-	type HealthStruct struct {
-		Message string           `json:"message"`
-		Status  ServerStatusType `json:"status"`
-		// Extend this struct with more fields as needed, e.g., version, uptime, s3 reachability etc.
-	}
-
-	w.WriteHeader(http.StatusOK)
-
-	response := HealthStruct{
-		Message: "Subscriber service is healthy",
-		Status:  StatusOk,
-	}
-
-	json.NewEncoder(w).Encode(response)
 
 }
