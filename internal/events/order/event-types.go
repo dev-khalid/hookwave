@@ -24,6 +24,12 @@ const (
 	OrderStatusShipped OrderStatus = "shipped"
 )
 
+var ListedOrderStatuses = []OrderStatus{
+	OrderStatusCreated,
+	OrderStatusUpdated,
+	OrderStatusShipped,
+}
+
 type PaymentMethod string
 
 const (
@@ -31,95 +37,100 @@ const (
 	PaymentMethodBankTransfer PaymentMethod = "bank_transfer"
 )
 
+var ListedPaymentMethods = []PaymentMethod{
+	PaymentMethodCard,
+	PaymentMethodBankTransfer,
+}
+
 type BaseOrderEvent struct {
-	ID         string    `json:"id"`
-	Type       EventType `json:"type"`
-	OccurredAt time.Time `json:"occurred_at"`
-	CompanyID  int       `json:"company_id"`
+	ID         string    `json:"id" validate:"required,uuid4"`
+	Type       EventType `json:"type" validate:"required,EventType"`
+	OccurredAt time.Time `json:"occurred_at" validate:"required"`
+	CompanyID  int       `json:"company_id" validate:"required,gt=0"`
 }
 
 type BaseOrderData struct {
-	OrderID    string      `json:"order_id"`
-	CustomerID string      `json:"customer_id"`
-	Status     OrderStatus `json:"status"`
-	Currency   string      `json:"currency"`
-	Amount     float64     `json:"amount"`
+	OrderID    string      `json:"order_id" validate:"required,uuid4"`
+	CustomerID string      `json:"customer_id" validate:"required,uuid4"`
+	Status     OrderStatus `json:"status" validate:"required,OrderStatus"`
+	Currency   string      `json:"currency" validate:"required,iso4217"`
+	Amount     float64     `json:"amount" validate:"gte=0"`
 }
 
 /** Order Created Event */
 
 type OrderCreatedEvent struct {
 	BaseOrderEvent
-	Data OrderCreatedData `json:"data"`
+	Data OrderCreatedData `json:"data" validate:"required"`
 }
 
 type OrderCreatedData struct {
 	BaseOrderData
-	Status          OrderStatus     `json:"status"`
-	Items           []OrderItem     `json:"items"`
-	ShippingAddress ShippingAddress `json:"shipping_address"`
+	Status          OrderStatus     `json:"status" validate:"required,OrderStatus"`
+	Items           []OrderItem     `json:"items" validate:"required,min=1,dive"`
+	ShippingAddress ShippingAddress `json:"shipping_address" validate:"required"`
 }
 
 type OrderItem struct {
-	SKU       string  `json:"sku"`
-	Name      string  `json:"name"`
-	Quantity  int     `json:"quantity"`
-	UnitPrice float64 `json:"unit_price"`
+	SKU       string  `json:"sku" validate:"required"`
+	Name      string  `json:"name" validate:"required"`
+	Quantity  int     `json:"quantity" validate:"required,gt=0"`
+	UnitPrice float64 `json:"unit_price" validate:"gte=0"`
 }
 
 type ShippingAddress struct {
-	Line1      string `json:"line1"`
-	City       string `json:"city"`
-	PostalCode string `json:"postal_code"`
-	Country    string `json:"country"` // NOTE: this should be an enum of valid ISO 3166-1 alpha-2 codes
+	Line1      string `json:"line1" validate:"required"`
+	City       string `json:"city" validate:"required"`
+	PostalCode string `json:"postal_code" validate:"required"`
+	Country    string `json:"country" validate:"required,iso3166_1_alpha2"`
 }
 
 /** Order Updated Event */
 
 type OrderUpdatedEvent struct {
 	BaseOrderEvent
-	Data OrderUpdatedData `json:"data"`
+	Data OrderUpdatedData `json:"data" validate:"required"`
 }
 
 type OrderUpdatedData struct {
 	BaseOrderData
-	PreviousStatus OrderStatus `json:"previous_status"`
-	Changes        Changes     `json:"changes"`
+	PreviousStatus OrderStatus `json:"previous_status" validate:"required,OrderStatus"`
+	Changes        Changes     `json:"changes" validate:"required"`
 }
 
 type Changes struct {
-	Status  StatusChange `json:"status"`
-	Payment PaymentInfo  `json:"payment"`
+	Status  StatusChange `json:"status" validate:"required"`
+	Payment PaymentInfo  `json:"payment" validate:"omitempty"`
 }
 
 type StatusChange struct {
-	From string `json:"from"`
-	To   string `json:"to"`
+	From OrderStatus `json:"from" validate:"required,OrderStatus"`
+	To   OrderStatus `json:"to" validate:"required,OrderStatus"`
 }
 
 type PaymentInfo struct {
-	Method        PaymentMethod `json:"method"`
-	TransactionID string        `json:"transaction_id"`
-	PaidAt        time.Time     `json:"paid_at"`
+	Method        PaymentMethod `json:"method" validate:"required,PaymentMethod"`
+	TransactionID string        `json:"transaction_id" validate:"required"`
+	PaidAt        time.Time     `json:"paid_at" validate:"required"`
 }
 
 /** Order Shipped Event */
 
 type OrderShippedEvent struct {
 	BaseOrderEvent
-	Data OrderShippedData `json:"data"`
+	Data OrderShippedData `json:"data" validate:"required"`
 }
 
 type OrderShippedData struct {
 	BaseOrderData
-	Shipment Shipment `json:"shipment"`
+	Shipment Shipment `json:"shipment" validate:"required"`
 }
 
 type Shipment struct {
-	Carrier           string      `json:"carrier"`
-	TrackingNumber    string      `json:"tracking_number"`
-	TrackingURL       string      `json:"tracking_url"`
-	ShippedAt         time.Time   `json:"shipped_at"`
-	EstimatedDelivery time.Time   `json:"estimated_delivery"`
-	Items             []OrderItem `json:"items"`
+	Carrier           string      `json:"carrier" validate:"required"`
+	TrackingNumber    string      `json:"tracking_number" validate:"required"`
+	TrackingURL       string      `json:"tracking_url" validate:"required,url"`
+	ShippedAt         time.Time   `json:"shipped_at" validate:"required"`
+	EstimatedDelivery time.Time   `json:"estimated_delivery" validate:"required,gtfield=ShippedAt"`
+	Items             []OrderItem `json:"items" validate:"required,min=1,dive"`
 }

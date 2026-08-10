@@ -163,8 +163,8 @@ func newOrderUpdated() *order.OrderUpdatedEvent {
 			PreviousStatus: from,
 			Changes: order.Changes{
 				Status: order.StatusChange{
-					From: string(from),
-					To:   string(order.OrderStatusUpdated),
+					From: from,
+					To:   order.OrderStatusUpdated,
 				},
 				Payment: order.PaymentInfo{
 					Method:        order.PaymentMethod(gofakeit.RandomString([]string{"card", "bank_transfer"})),
