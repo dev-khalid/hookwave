@@ -51,7 +51,7 @@ type BaseOrderEvent struct {
 
 type BaseOrderData struct {
 	OrderID    string      `json:"order_id" validate:"required,uuid4"`
-	CustomerID string      `json:"customer_id" validate:"required,uuid4"`
+	CustomerID int         `json:"customer_id" validate:"required,numeric,gt=0"`
 	Status     OrderStatus `json:"status" validate:"required,OrderStatus"`
 	Currency   string      `json:"currency" validate:"required,iso4217"`
 	Amount     float64     `json:"amount" validate:"gte=0"`
@@ -66,7 +66,6 @@ type OrderCreatedEvent struct {
 
 type OrderCreatedData struct {
 	BaseOrderData
-	Status          OrderStatus     `json:"status" validate:"required,OrderStatus"`
 	Items           []OrderItem     `json:"items" validate:"required,min=1,dive"`
 	ShippingAddress ShippingAddress `json:"shipping_address" validate:"required"`
 }

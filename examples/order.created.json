@@ -4,8 +4,8 @@
   "occurred_at": "2026-06-01T09:15:30Z",
   "company_id": 42,
   "data": {
-    "order_id": "ord_10428",
-    "customer_id": "cus_5567",
+    "order_id": "5b0bdf69-faa7-48ba-87f3-e37a9c12f380",
+    "customer_id": 11,
     "status": "created",
     "currency": "USD",
     "amount": 129.97,

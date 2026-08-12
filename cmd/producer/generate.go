@@ -129,7 +129,7 @@ func newOrderCreated() *order.OrderCreatedEvent {
 		Data: order.OrderCreatedData{
 			BaseOrderData: order.BaseOrderData{
 				OrderID:    gofakeit.UUID(),
-				CustomerID: gofakeit.UUID(),
+				CustomerID: gofakeit.IntRange(1, 1000),
 				Status:     order.OrderStatusCreated,
 				Currency:   "USD",
 				Amount:     gofakeit.Float64Range(10, 1000),
@@ -155,7 +155,7 @@ func newOrderUpdated() *order.OrderUpdatedEvent {
 		Data: order.OrderUpdatedData{
 			BaseOrderData: order.BaseOrderData{
 				OrderID:    gofakeit.UUID(),
-				CustomerID: gofakeit.UUID(),
+				CustomerID: gofakeit.IntRange(1, 1000),
 				Status:     order.OrderStatusUpdated,
 				Currency:   "USD",
 				Amount:     gofakeit.Float64Range(10, 1000),
@@ -188,7 +188,7 @@ func newOrderShipped() *order.OrderShippedEvent {
 		Data: order.OrderShippedData{
 			BaseOrderData: order.BaseOrderData{
 				OrderID:    gofakeit.UUID(),
-				CustomerID: gofakeit.UUID(),
+				CustomerID: gofakeit.IntRange(1, 1000),
 				Status:     order.OrderStatusShipped,
 				Currency:   "USD",
 				Amount:     gofakeit.Float64Range(10, 1000),
