@@ -50,8 +50,8 @@ func generateSubscriptionsFile(path string, count int) error {
 
 // randomEventSubset picks 1-3 unique event types from the listed event types.
 func randomEventSubset() []order.EventType {
-	pool := make([]order.EventType, len(order.ListedEventTypes))
-	copy(pool, order.ListedEventTypes)
+	pool := make([]order.EventType, len(order.OrderEventTypes))
+	copy(pool, order.OrderEventTypes)
 
 	// Convert to strings for shuffling
 	strPool := make([]string, len(pool))

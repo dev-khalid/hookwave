@@ -10,7 +10,7 @@ const (
 	OrderShippedEventType EventType = "order.shipped"
 )
 
-var ListedEventTypes = []EventType{
+var OrderEventTypes = []EventType{
 	OrderCreatedEventType,
 	OrderUpdatedEventType,
 	OrderShippedEventType,

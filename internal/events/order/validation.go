@@ -8,7 +8,7 @@ import "github.com/go-playground/validator/v10"
 var Validate = validator.New()
 
 func init() {
-	register("EventType", ListedEventTypes)
+	register("EventType", OrderEventTypes)
 	register("OrderStatus", ListedOrderStatuses)
 	register("PaymentMethod", ListedPaymentMethods)
 }
